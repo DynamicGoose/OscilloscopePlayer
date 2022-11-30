@@ -41,7 +41,7 @@ jobs:
 #        ls C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin
     -
       name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         host: windows
         target: "desktop"
