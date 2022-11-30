@@ -49,7 +49,7 @@ jobs:
         arch: ${{ env.MINGW_VERSION }}
         dir: "${{github.workspace}}/qt"
         install-deps: "true"
-        modules: qtmultimedia
+        modules: "qtmultimedia"
     -
       name: Set Qt path and refresh
       run: |
