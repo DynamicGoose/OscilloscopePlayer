@@ -59,7 +59,7 @@ void Decode::run()
 {
     int ret = 0, got_frame;
 
-    /* 从文件中读取帧 */
+    //reading frames from a file
     while (av_read_frame(fmt_ctx, &pkt) >= 0) {
         AVPacket orig_pkt = pkt;
         do {
@@ -71,7 +71,7 @@ void Decode::run()
         } while (pkt.size > 0);
         av_packet_unref(&orig_pkt);
     }
-    /* 刷新缓存的帧 */
+    //refreshing cached frames
     pkt.data = nullptr;
     pkt.size = 0;
     do {
@@ -86,51 +86,51 @@ bool Decode::isReady()
 
 int Decode::open(QString filename)
 {
-    /* 打开文件读取格式 */
+    //specify file read format
     if (avformat_open_input(&fmt_ctx, filename.toLatin1().data(), nullptr, nullptr) < 0)
     {
-        return 1;   //无法打开源文件
+        return 1;   //unable to open source file
     }
 
-    /* 显示输入文件信息（调试用） */
+    //display input file information (for debugging)
     //    av_dump_format(fmt_ctx, 0, filename.toLatin1().data(), 0);
 
-    /* 检索流信息 */
+    //retrieve stream information
     if (avformat_find_stream_info(fmt_ctx, nullptr) < 0)
     {
-        return 2;   //找不到流信息
+        return 2;   //can't retrieve stream information
     }
 
-    /* 打开视频流 */
+    //open video stream
     video_stream_idx = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     if (video_stream_idx >= 0)
     {
-        video_stream = fmt_ctx->streams[video_stream_idx];   //视频流
-        /* 寻找视频流的解码器 */
-        const AVCodec* video_dec = avcodec_find_decoder(video_stream->codecpar->codec_id); //视频流的解码器
+        video_stream = fmt_ctx->streams[video_stream_idx];
+        //find decoder for video stream
+        const AVCodec* video_dec = avcodec_find_decoder(video_stream->codecpar->codec_id);
         if (video_dec)
         {
-            /* 为解码器分配编解码器上下文 */
+            //assign codec context to decoder
             video_dec_ctx = avcodec_alloc_context3(video_dec);
             if (video_dec_ctx)
             {
-                /* 将编解码器参数从输入流复制到输出编解码器上下文 */
+                //copy codec parameters from the input stream to the output codec context
                 if (avcodec_parameters_to_context(video_dec_ctx, video_stream->codecpar) >= 0)
                 {
-                    /* 启动解码器 */
+                    //start decoder
                     if (avcodec_open2(video_dec_ctx, video_dec, nullptr) >= 0)
                     {
-                        /* 读取一些信息，宽高像素格式 */
+                        //retrieve information in width and height pixel format
                         video_width = video_dec_ctx->width;
                         video_height = video_dec_ctx->height;
                         video_pix_fmt = video_dec_ctx->pix_fmt;
-                        //转换色彩
-//                        video_convert_frame = av_frame_alloc(); //帧
+                        //convert colors
+//                        video_convert_frame = av_frame_alloc();
 //                        if (!video_convert_frame)
-//                            return 8;  //无法分配帧
+//                            return 8;  //unable to assign frames
 //                        unsigned char* out_buffer = (unsigned char *)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_BGRA, video_width, video_height, 1));
 //                        if (!out_buffer)
-//                            return 8;  //无法分配
+//                            return 8;  //unable to assign frames
 //                        av_image_fill_arrays(video_convert_frame->data, video_convert_frame->linesize, out_buffer, AV_PIX_FMT_BGRA, video_width, video_height, 1);
 //                        video_convert_ctx = sws_getContext(video_width, video_height, video_pix_fmt,
 //                                                           video_width, video_height, AV_PIX_FMT_BGRA,
@@ -138,47 +138,47 @@ int Decode::open(QString filename)
 //                        if(!video_convert_ctx)
 //                        {
 //                            audio_stream_idx = -1;
-//                            return 8;  //无法设置视频色彩转换上下文
+//                            return 8;  //unable to set video color conversion context
 //                        }
-                        //边缘检测
+                        //edge detection
                         video_edge = new quint8[256 * 256];
                     }
                     else
-                        return 7;   //无法打开视频编解码器
+                        return 7;   //unable to open video codec
                 }
                 else
-                    return 6;   //无法将视频编解码器参数复制到解码器上下文
+                    return 6;   //unable to copy video codec parameters to the decoder context
             }
             else
-                return 5;   //无法分配编解码器上下文
+                return 5;   //unable to assign codec context
         }
         else
-            return 4;   //找不到视频流的解码器
+            return 4;   //can't find codec for video streaming
     }
     else
-        return 3;   //找不到视频流
+        return 3;   //can't find video stream
 
-    /* 打开音频流 */
+    //open audio stream
     audio_stream_idx = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (audio_stream_idx >= 0)
     {
-        audio_stream = fmt_ctx->streams[audio_stream_idx];   //音频流
-        /* 寻找视频流的解码器 */
-        const AVCodec* audio_dec = avcodec_find_decoder(audio_stream->codecpar->codec_id); //音频流的解码器
+        audio_stream = fmt_ctx->streams[audio_stream_idx];
+        //find decoder
+        const AVCodec* audio_dec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
         if (audio_dec)
         {
-            /* 为解码器分配编解码器上下文 */
+            //assigning codec context
             audio_dec_ctx = avcodec_alloc_context3(audio_dec);
             ;
             if (audio_dec_ctx)
             {
-                /* 将编解码器参数从输入流复制到输出编解码器上下文 */
+                //copy codec parameters
                 if (avcodec_parameters_to_context(audio_dec_ctx, audio_stream->codecpar) >= 0)
                 {
-                    /* 启动解码器 */
+                    //start decoder
                     if (avcodec_open2(audio_dec_ctx, audio_dec, nullptr) >= 0)
                     {
-                        /* 音频重采样 */    //采样为44100双声道16位整型
+                        //audio resampling in 44100 dual-channel 16-bit integer
                         audio_convert_ctx = swr_alloc_set_opts(nullptr,
                                                                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_U8, 44100,
                                                                int64_t(audio_dec_ctx->channel_layout), audio_dec_ctx->sample_fmt, audio_dec_ctx->sample_rate,
@@ -187,50 +187,50 @@ int Decode::open(QString filename)
                         if(!audio_convert_ctx)
                         {
                             audio_stream_idx = -1;
-                            return 15;  //无法设置重新采样上下文
+                            return 15;  //can't set resampling context
                         }
                         swr_init(audio_convert_ctx);
                     }
                     else
                     {
                         audio_stream_idx = -1;
-                        return 14;   //无法打开音频编解码器
+                        return 14;   //unable to open audio codec
                     }
                 }
                 else
                 {
                     audio_stream_idx = -1;
-                    return 13;   //无法将音频编解码器参数复制到解码器上下文
+                    return 13;   //unable to copy audio codec parameters
                 }
             }
             else
             {
                 audio_stream_idx = -1;
-                return 12;   //无法分配编解码器上下文
+                return 12;   //unable to assign codec context
             }
         }
         else
         {
             audio_stream_idx = -1;
-            return 11;   //找不到音频流的解码器
+            return 11;   //can't find decoder for audio stream
         }
     }
     else
     {
         audio_stream_idx = -1;
-        return 10;   //找不到音频流
+        return 10;   //can't find audio stream
     }
 
     frame = av_frame_alloc();
     if (!frame)
-        return 16;  //无法分配帧
+        return 16;  //unable to assign frames
 
-    /* 初始化数据包，data设置为nullptr，让demuxer填充它 */
+    //initialize the packet, set data to nullptr, let the demuxer fill it 
     av_init_packet(&pkt);
     pkt.data = nullptr;
     pkt.size = 0;
 
-    ready = true;   //已准备好状态
+    ready = true;
 
     return 0;
 }
@@ -264,17 +264,17 @@ int Decode::decode_packet(int *got_frame)
     int decoded = pkt.size;
     *got_frame = 0;
 
-    //检查队列长度
+    //check queuelength
     auto fps = this->fps();
-    if(video.size() > 4)    //缓存4f，如果队列中已有的超过4f则休息一帧的时间
+    if(video.size() > 4)    //cache 4f, rest a frame if more than 4f are already in the queue
         QThread::msleep(1000 * fps.den / fps.num);
-    if (pkt.stream_index == video_stream_idx)   //包是视频包
+    if (pkt.stream_index == video_stream_idx)
     {
-        /* 解码视频帧 */
+        //decoding frames
         ret = avcodec_send_packet(video_dec_ctx, &pkt);
         if (ret < 0)
         {
-            fprintf(stderr, "发送数据包进行解码时出错\n");
+            fprintf(stderr, "Error while sending packets for decoding\n");
             return ret;
         }
         while (ret >= 0)
@@ -283,19 +283,19 @@ int Decode::decode_packet(int *got_frame)
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 return ret;
             else if (ret < 0) {
-                fprintf(stderr, "解码时出错\n");
+                fprintf(stderr, "Error while decoding\n");
                 return ret;
             }
 
-            //输出帧信息
+            //output frame information
             //printf("video_frame n:%d coded_n:%d\n",
             //       video_frame_count++, frame->coded_picture_number);
-            //转换色彩
+            //convert colors
             //sws_scale(video_convert_ctx,
             //          frame->data, frame->linesize, 0, video_height,
             //          video_convert_frame->data, video_convert_frame->linesize);
 
-            //检查刷新
+            //check refresh
             if(refresh)
             {
                 refresh = false;
@@ -306,12 +306,12 @@ int Decode::decode_packet(int *got_frame)
                 edge = edgeRefresh;
             }
 
-            //边缘检测
-            float temp1[9]={1,0,-1,1,0,-1,1,0,-1};  //模板数组
+            //edge detection
+            float temp1[9]={1,0,-1,1,0,-1,1,0,-1};  //template arrays
             float temp2[9]={-1,-1,-1,0,0,0,1,1,1};
-            float result1;  //用于暂存模板值
+            float result1;
             float result2;
-            int count = 0;  //总点数计数
+            int count = 0;  //total point count
             memset(video_edge, 0, 256 * 256);
             {
                 int y = (1 - moveY - video_height / 2) * scaleY / 100 + 256 / 2;
@@ -339,7 +339,7 @@ int Decode::decode_packet(int *got_frame)
                             {
                                 for (int tx = 0; tx < 3; tx++)
                                 {
-                                    int z = frame->data[0][(yy - 1 + ty) * frame->linesize[0] + xx - 1 + tx]; //这里我们假装视频是YUV，这里只用Y就是灰度了
+                                    int z = frame->data[0][(yy - 1 + ty) * frame->linesize[0] + xx - 1 + tx];
                                     result1 += z * temp1[ ty * 3 + tx];
                                     result2 += z * temp2[ ty * 3 + tx];
                                 }
@@ -348,7 +348,7 @@ int Decode::decode_packet(int *got_frame)
                             result2 = abs(int(result2));
                             if(result1 < result2)
                                 result1 = result2;
-                            if((result1 > edge))  //超过阈值则为有效点
+                            if((result1 > edge))
                             {
                                 video_edge[y * 256 + x] = 255;
                                 count++;
@@ -359,7 +359,7 @@ int Decode::decode_packet(int *got_frame)
                 }
             }
 
-            //生成QImage
+            //generate QImage
             //QImage image(video_width, video_height, QImage::Format_ARGB32);
             //for (int y = 0; y < video_height; y++)
             //    memcpy(image.scanLine(y), video_convert_frame->data[0] + y * video_convert_frame->linesize[0], video_width * 4);
@@ -376,16 +376,16 @@ int Decode::decode_packet(int *got_frame)
                         if(xx < 0 || xx >= video_width)
                             image.scanLine(y)[x] = 0;
                         else
-                            image.scanLine(y)[x] = frame->data[0][yy * frame->linesize[0] + xx]; //这里我们假装视频是YUV，这里只用Y就是灰度了
+                            image.scanLine(y)[x] = frame->data[0][yy * frame->linesize[0] + xx];
                     }
             }
-            video.enqueue(image);   //添加到队列尾部
+            video.enqueue(image);   //add to the end of the queue
             QImage imageEdge(256, 256, QImage::Format_Grayscale8);
             for (int y = 0; y < 256; y++)
                 memcpy(imageEdge.scanLine(y), video_edge + y * 256, 256);
-            videoEdge.enqueue(imageEdge);   //添加到队列尾部
+            videoEdge.enqueue(imageEdge);
 
-            //计算路径点
+            //calculate path points
             QVector<Point> points(count);
             int x = 0;
             int y = 0;
@@ -426,7 +426,7 @@ int Decode::decode_packet(int *got_frame)
                         yMax = 255;
                         yMaxOut = true;
                     }
-                    //上边缘
+                    //upper edge
                     if(!yMinOut)
                     {
                         for(int xx = xMin; xx < xMax; xx++)
@@ -435,12 +435,12 @@ int Decode::decode_packet(int *got_frame)
                             {
                                 points[i].x = x = xx;
                                 points[i].y = y = yMin;
-                                video_edge[yMin * 256 + xx] = 254; //标记为已使用过了
+                                video_edge[yMin * 256 + xx] = 254; //mark as used
                                 goto find;
                             }
                         }
                     }
-                    //下边缘
+                    //lower edge
                     if(!yMaxOut)
                     {
                         for(int xx = xMin; xx < xMax; xx++)
@@ -449,12 +449,12 @@ int Decode::decode_packet(int *got_frame)
                             {
                                 points[i].x = x = xx;
                                 points[i].y = y = yMax;
-                                video_edge[yMax * 256 + xx] = 254; //标记为已使用过了
+                                video_edge[yMax * 256 + xx] = 254; //mark as used
                                 goto find;
                             }
                         }
                     }
-                    //左边缘
+                    //left edge
                     if(!xMinOut)
                     {
                         for(int yy = yMin; yy < yMax; yy++)
@@ -463,12 +463,12 @@ int Decode::decode_packet(int *got_frame)
                             {
                                 points[i].x = x = xMin;
                                 points[i].y = y = yy;
-                                video_edge[yy * 256 + xMin] = 254; //标记为已使用过了
+                                video_edge[yy * 256 + xMin] = 254; //mark as used
                                 goto find;
                             }
                         }
                     }
-                    //右边缘
+                    //right edge
                     if(!xMaxOut)
                     {
                         for(int yy = yMin; yy < yMax; yy++)
@@ -477,7 +477,7 @@ int Decode::decode_packet(int *got_frame)
                             {
                                 points[i].x = x = xMax;
                                 points[i].y = y = yy;
-                                video_edge[yy * 256 + xMax] = 254; //标记为已使用过了
+                                video_edge[yy * 256 + xMax] = 254; //mark as used
                                 goto find;
                             }
                         }
@@ -489,13 +489,13 @@ find:
             this->points.enqueue(points);
         }
     }
-    else if (pkt.stream_index == audio_stream_idx)  //是音频包
+    else if (pkt.stream_index == audio_stream_idx)  //is audio package
     {
-        /* 解码音频帧 */
+        //decoding audio frames
         ret = avcodec_send_packet(audio_dec_ctx, &pkt);
         if (ret < 0)
         {
-            fprintf(stderr, "将数据包提交给解码器时出错\n");
+            fprintf(stderr, "errer submitting packets to decoder\n");
             return ret;
         }
         while (ret >= 0)
@@ -504,18 +504,18 @@ find:
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 return ret;
             else if (ret < 0) {
-                fprintf(stderr, "解码时出错\n");
+                fprintf(stderr, "error while decoding\n");
                 return ret;
             }
-            //输出帧信息
+            //output frame information
             //printf("audio_frame n:%d nb_samples:%d pts:%s\n",
             //       audio_frame_count++, frame->nb_samples,
             //       av_ts2timestr(frame->pts, &audio_dec_ctx->time_base));
 
             int data_size = av_get_bytes_per_sample(audio_dec_ctx->sample_fmt);
             if (data_size < 0) {
-                /* This should not occur, checking just for paranoia */
-                fprintf(stderr, "无法计算数据大小\n");
+                //This should not occur, checking just for paranoia
+                fprintf(stderr, "unable to calculate data size\n");
                 return -1;
             }
 

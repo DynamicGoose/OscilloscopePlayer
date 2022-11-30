@@ -65,22 +65,22 @@ private:
     int edgeRefresh = 64;
     QAtomicInteger<bool> refresh = false;
 
-    AVFormatContext *fmt_ctx = nullptr; //源文件格式信息
-    int video_stream_idx = -1, audio_stream_idx = -1;   //流类型
-    AVStream *video_stream = nullptr, *audio_stream = nullptr;  //流
-    AVCodecContext *video_dec_ctx = nullptr, *audio_dec_ctx = nullptr;  //解码器上下文
+    AVFormatContext *fmt_ctx = nullptr; //source file format information
+    int video_stream_idx = -1, audio_stream_idx = -1;   //stream type
+    AVStream *video_stream = nullptr, *audio_stream = nullptr;  //flow
+    AVCodecContext *video_dec_ctx = nullptr, *audio_dec_ctx = nullptr;  //decoder context
     AVPacket pkt;
     AVFrame* frame = nullptr;
-    /* 视频 */
+    //video
     int video_width, video_height;
-    AVPixelFormat video_pix_fmt; //像素格式
-//    SwsContext* video_convert_ctx = nullptr;    //转码
+    AVPixelFormat video_pix_fmt; //pixel format
+//    SwsContext* video_convert_ctx = nullptr;    //transcoding
 //    AVFrame* video_convert_frame = nullptr;
-    quint8* video_edge = nullptr;  //储存边缘位图
-    int video_frame_count = 0;  //视频计数
-    /* 音频 */
-    SwrContext* audio_convert_ctx = nullptr;    //转码
-    int audio_frame_count = 0;  //音频计数
+    quint8* video_edge = nullptr;  //store edge bitmap
+    int video_frame_count = 0;  //frame count
+    //audio
+    SwrContext* audio_convert_ctx = nullptr;    //transcoding
+    int audio_frame_count = 0;  //frame count
 
     int decode_packet(int *got_frame);
 };

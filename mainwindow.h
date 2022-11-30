@@ -56,7 +56,7 @@ private:
     Oscilloscope oscilloscope;
     Decode decode;
 
-    bool ScaleXY = true;    //等比缩放开关
+    bool ScaleXY = true;    //isometric scaling switch
     enum State{Inited, Ready, Play, Pause, Stop} state;
 
     void log(const QString text);

@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    //列出音频设备
+    //list audio devices
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     audioDeviceList = QMediaDevices::audioOutputs();
 #else
@@ -35,17 +35,17 @@ MainWindow::MainWindow(QWidget *parent) :
         i++;
     }
 
-    //设置日志最大行数
+    //maximum numder of lines in log
     ui->textEditInfo->document()->setMaximumBlockCount(100);
 
-    //解码器初始设置
+    //decoder initial settings
     decode.set( ui->horizontalSliderScaleX->value() <= 1000 ? ui->horizontalSliderScaleX->value() / 10 : ui->horizontalSliderScaleX->value() - 900,
                 ui->horizontalSliderScaleY->value() <= 1000 ? ui->horizontalSliderScaleY->value() / 10 : ui->horizontalSliderScaleY->value() - 900,
                 ui->horizontalSliderMoveX->value(),
                 ui->horizontalSliderMoveY->value(),
                 ui->horizontalSliderEdge->value());
 
-    //示波器初始设置
+    //oscilloscope initial settings
     if (!oscilloscope.set(audioDeviceList[ui->comboBoxList->currentIndex()],
                         ui->comboBoxRate->currentText().toInt(),
                         ui->spinBoxChannel->value(),
@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent) :
                         ui->comboBoxFPS->currentText().toInt()))
     {
         QMessageBox msgBox;
-        msgBox.setText("音频输出设备不支持当前设置。");
+        msgBox.setText("The selected audio output device doesn't support the current settings!");
         msgBox.exec();
         return;
     }
@@ -85,33 +85,33 @@ void MainWindow::on_pushButtonOpen_clicked()
         case 0:
             break;
         case 1:
-            QMessageBox::warning(this, "打开失败", "无法打开源文件。");
+            QMessageBox::warning(this, "Failed to open!", "Unable to open source file");
             return;
         case 2:
-            QMessageBox::warning(this, "打开失败", "找不到流信息。");
+            QMessageBox::warning(this, "Failed to open!", "Can't find stream information");
             return;
         default:
-            QMessageBox::warning(this, "打开失败", "未知原因打开失败。");
+            QMessageBox::warning(this, "Failed to open!", "Failed to open for unknown reasons");
             return;
         }
 
-        //显示文件信息
+        //display file information
         auto fps = decode.fps();
         log("FPS: " + QString::number(double(fps.num) / double(fps.den), 'f', 2));
         auto width = decode.width();
         auto height = decode.height();
         log("Size: " + QString::number(width) + " x " + QString::number(height));
 
-        //设置UI上的FPS
-        ui->comboBoxFPS->setCurrentText(QString::number(double(fps.num) / double(fps.den), 'f', 0));    //示波器输出的fps与视频的不同，因为如果一个场景点数过多，则需要更低fps（实际就算点数过多，也会完成一次刷新，只是会丢帧，但是其实也没关系，所以ui上的fps设置主要是是为了预留更合适的音频缓冲区而设定）
+        //set FPS on UI
+        ui->comboBoxFPS->setCurrentText(QString::number(double(fps.num) / double(fps.den), 'f', 0));    //the fps of the oscilloscope output is different from that of the video, because if a scene has too many points, it needs a lower fps (in reality, even if there are too many points, a refresh will be completed, only to lose frames, but it does not really matter, so the fps setting on the ui is mainly to set aside a more appropriate audio buffer and set)
 
-        //设置缩放
+        //set zoom
         int value = width > height ? 256 * 100 / width : 256 * 100 / height;
         value = value <= 100 ? value * 10 : value + 900;
         ScaleXY = true;
         ui->horizontalSliderScaleX->setValue(value);
 
-        //设置状态
+        //setting status
         state = Ready;
     }
 }
@@ -120,21 +120,21 @@ void MainWindow::on_pushButtonPlay_clicked()
 {
     if(!decode.isReady())
     {
-        QMessageBox::warning(this, "播放失败", "请先打开文件。");
+        QMessageBox::warning(this, "Playback failure!", "Please open the file first");
         return;
     }
 
     switch (state) {
     case Inited:
-        QMessageBox::warning(this, "播放失败", "请先打开文件。");
+        QMessageBox::warning(this, "Playback failure!", "Please open the file first");
         return;
     case Pause:
         state = Play;
-        ui->pushButtonPlay->setText("暂停");
+        ui->pushButtonPlay->setText("suspension");
         return;
     case Play:
         state = Pause;
-        ui->pushButtonPlay->setText("播放");
+        ui->pushButtonPlay->setText("playback");
         return;
     case Stop:
         return;
@@ -142,31 +142,31 @@ void MainWindow::on_pushButtonPlay_clicked()
         break;
     }
 
-    //根据帧率设置音频缓冲区
+    //set audio buffer according to frama rate
     auto fps = decode.fps();
 
     int out_size = MAX_AUDIO_FRAME_SIZE*2;
     uint8_t *play_buf = nullptr;
     play_buf = reinterpret_cast<uint8_t*>(av_malloc(size_t(out_size)));
 
-    //解码器启动
+    //start decoder
     decode.start();
 
-    //示波器输出启动
+    //oscilloscope output start
     oscilloscope.start();
 
-    //计时器
+    //timer
     QElapsedTimer time;
     time.start();
     int i = 0;
 
-    //状态设置
+    //status settings
     state = Play;
-    ui->pushButtonPlay->setText("暂停");
+    ui->pushButtonPlay->setText("suspension");
 
     while(1)
     {
-        if(state == Stop)   //停止检测
+        if(state == Stop)   //stop detection
         {
 //            decode.stop();
             oscilloscope.stop();
@@ -175,31 +175,28 @@ void MainWindow::on_pushButtonPlay_clicked()
 
         if(1000 * double(i) * double(fps.den) / double(fps.num) < time.elapsed())
         {
-            //qDebug() << double(time.elapsed()) / 1000;    //显示时间
-            if(state == Play)  //在播放模式
+            //qDebug() << double(time.elapsed()) / 1000;
+            if(state == Play)  //playback mode
             {
                 if((!decode.video.isEmpty()) && (!decode.videoEdge.isEmpty()) && (!decode.points.isEmpty()))
                 {
-                    //刷新视频图像
-                    ui->videoViewer->image = decode.video.dequeue();   //设置视频新图像
-                    ui->videoViewer->update();  //刷新视频图像
-                    ui->videoViewerEdge->image = decode.videoEdge.dequeue();   //设置视频新图像
-                    ui->videoViewerEdge->update();  //刷新视频图像
+                    ui->videoViewer->image = decode.video.dequeue();   //setting up new image for video
+                    ui->videoViewer->update();  //refresh image
+                    ui->videoViewerEdge->image = decode.videoEdge.dequeue(); 
+                    ui->videoViewerEdge->update();
 
-                    //输出音频
-
-                    //刷新示波器输出
+                    //refresh oscilloscope output
                     oscilloscope.setPoints(decode.points.dequeue());
                 }
                 else
-                    log("丢帧");
+                    log("lost frame");
             }
 
             i++;
         }
         //QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         QCoreApplication::processEvents();
-        QThread::msleep(1000 * double(fps.den) / double(fps.num) / 10);   //休息 每帧时间/10 ms
+        QThread::msleep(1000 * double(fps.den) / double(fps.num) / 10);   //break time per frame / 10ms
     }
 }
 
@@ -208,14 +205,14 @@ void MainWindow::on_pushButtonTest_clicked()
     if(!ui->pushButtonTest->isChecked())
     {
         oscilloscope.stop();
-        ui->pushButtonTest->setText("测试输出");
+        ui->pushButtonTest->setText("test output");
         return;
     }
 
-    //示波器输出启动
+    //oscilloscope output start
     oscilloscope.start();
 
-    //设置波
+    //set wave
     QVector<Point> points(0x20);
     points[0x00].x=0x00;
     points[0x01].x=0x10;
@@ -285,16 +282,16 @@ void MainWindow::on_pushButtonTest_clicked()
 
     oscilloscope.setPoints(points);
 
-    ui->pushButtonTest->setText("停止测试");
+    ui->pushButtonTest->setText("stop testing");
 }
 
 void MainWindow::on_comboBoxList_activated(int index)
 {
-    //示波器
+    //oscilloscope
     if (!oscilloscope.setAudioDevice(audioDeviceList[index]))
     {
         QMessageBox msgBox;
-        msgBox.setText("音频输出设备不支持当前设置。");
+        msgBox.setText("The selected audio output device doesn't support the current settings!");
         msgBox.exec();
         return;
     }
@@ -307,11 +304,11 @@ void MainWindow::on_comboBoxRate_currentTextChanged(const QString &arg1)
     {
         rate = 1;
     }
-    //示波器
+
     if (!oscilloscope.setSampleRate(rate))
     {
         QMessageBox msgBox;
-        msgBox.setText("音频输出设备不支持当前设置。");
+        msgBox.setText("The selected audio output device doesn't support the current settings!");
         msgBox.exec();
         return;
     }
@@ -322,11 +319,10 @@ void MainWindow::on_spinBoxChannel_valueChanged(int arg1)
     ui->spinBoxChannelX->setMaximum(arg1 - 1);
     ui->spinBoxChannelY->setMaximum(arg1 - 1);
 
-    //示波器
     if (!oscilloscope.setChannelCount(arg1))
     {
         QMessageBox msgBox;
-        msgBox.setText("音频输出设备不支持当前设置。");
+        msgBox.setText("The selected audio output device doesn't support the current settings!");
         msgBox.exec();
         return;
     }
@@ -334,13 +330,11 @@ void MainWindow::on_spinBoxChannel_valueChanged(int arg1)
 
 void MainWindow::on_spinBoxChannelX_valueChanged(int arg1)
 {
-    //示波器
     oscilloscope.setChannelX(arg1);
 }
 
 void MainWindow::on_spinBoxChannelY_valueChanged(int arg1)
 {
-    //示波器
     oscilloscope.setChannelY(arg1);
 }
 
@@ -351,41 +345,40 @@ void MainWindow::on_comboBoxFPS_currentTextChanged(const QString &arg1)
     {
         fps = 1;
     }
-    //示波器
     oscilloscope.setFPS(fps);
 }
 
 void MainWindow::on_horizontalSliderScaleX_valueChanged(int value)
 {
-    if(ScaleXY) ui->horizontalSliderScaleY->setValue(value);    //等比缩放
+    if(ScaleXY) ui->horizontalSliderScaleY->setValue(value);    //isometric scaling
     value = value <= 1000 ? value / 10 : value - 900;
     decode.setScaleX(value);
-    ui->labelScaleX->setText("缩放X：" + QString::number(value) + " %");
+    ui->labelScaleX->setText("zoom x: " + QString::number(value) + " %");
 }
 
 void MainWindow::on_horizontalSliderScaleY_valueChanged(int value)
 {
     value = value <= 1000 ? value / 10 : value - 900;
     decode.setScaleY(value);
-    ui->labelScaleY->setText("缩放Y：" + QString::number(value) + " %");
+    ui->labelScaleY->setText("zoom y: " + QString::number(value) + " %");
 }
 
 void MainWindow::on_horizontalSliderMoveX_valueChanged(int value)
 {
     decode.setMoveX(value);
-    ui->labelMoveX->setText("偏移X：" + QString::number(value));
+    ui->labelMoveX->setText("offset x: " + QString::number(value));
 }
 
 void MainWindow::on_horizontalSliderMoveY_valueChanged(int value)
 {
     decode.setMoveY(value);
-    ui->labelMoveY->setText("偏移Y：" + QString::number(value));
+    ui->labelMoveY->setText("offset y: " + QString::number(value));
 }
 
 void MainWindow::on_horizontalSliderEdge_valueChanged(int value)
 {
     decode.setEdge(value);
-    ui->labelEdge->setText("边缘阈值：" + QString::number(value));
+    ui->labelEdge->setText("Edge threshold" + QString::number(value));
 }
 
 void MainWindow::on_horizontalSliderScaleY_sliderReleased()

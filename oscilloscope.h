@@ -44,7 +44,7 @@ signals:
 public slots:
 
 private:
-    void setBuffer();  //根据参数重新分配buffer内存
+    void setBuffer();  //reallocate buffer memory
     int isFormatSupported();
 
     bool stopMe = false;
@@ -63,8 +63,8 @@ private:
     int bufferLen = 0;
     char* bufferRefresh = nullptr;
     int bufferRefreshLen = 0;
-    QAtomicInteger<bool> refresh = false;       //当 refresh == true 时候，线程将会用 bufferRefresh 的 bufferRefreshLen 长度内容复制到 buffer 中去
-    //QByteArray bufferFrame;   //框
+    QAtomicInteger<bool> refresh = false;       //if refresh == true, the thread will copy the contents of bufferRefresh to the buffer using the bufferRefreshLen length of bufferRefresh
+    //QByteArray bufferFrame;   //frame
 
 };
 

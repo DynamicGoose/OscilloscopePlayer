@@ -6,7 +6,7 @@
 
 Oscilloscope::Oscilloscope(QObject *parent) : QThread(parent)
 {
-    //设置边框数据
+    //set border data
     //bufferFrame.resize(32 * this->channelCount);
     //for(int i = 0; i < 8; i++)
     //{
@@ -32,7 +32,7 @@ Oscilloscope::Oscilloscope(QObject *parent) : QThread(parent)
     //    bufferFrame[(256 * 3 + i) * channelCount + channelY] = char(255 - i);
     //}
 
-    //设置输出格式
+    //setting output format
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     format.setSampleFormat(QAudioFormat::UInt8);
 #else
@@ -106,9 +106,9 @@ void Oscilloscope::setFPS(int fps)
     setBuffer();
 }
 
-void Oscilloscope::setBuffer()  //根据参数重新分配buffer内存
+void Oscilloscope::setBuffer()  //reallocate buffer memory according to parameters
 {
-    bufferMaxSize = this->sampleRate / this->fps * this->channelCount;  //最大值等于一个帧的时间的按照采样率的数据量
+    bufferMaxSize = this->sampleRate / this->fps * this->channelCount;  //the maximum value is equal to the amount of data at the sampling rate for one frame of time
     if(buffer)
         delete buffer;
     buffer = new char[bufferMaxSize];
@@ -117,7 +117,7 @@ void Oscilloscope::setBuffer()  //根据参数重新分配buffer内存
     bufferRefresh = new char[bufferMaxSize];
 }
 
-void Oscilloscope::setPoints(const QVector<Point> points)   //根据点数据计算buffer，暂存在bufferRefresh等另一个线程下一次刷新时候将会复制走
+void Oscilloscope::setPoints(const QVector<Point> points)   //calculate the buffer based on the point data, and temporarily store it in bufferRefresh and another thread will copy it when it is refreshed next time
 {
     for(int i = 0; i < points.length() && i * channelCount < bufferMaxSize; i++)
     {
@@ -128,7 +128,7 @@ void Oscilloscope::setPoints(const QVector<Point> points)   //根据点数据计
     bufferRefreshLen = points.length() * channelCount;
     if(bufferRefreshLen > bufferMaxSize) bufferRefreshLen = bufferMaxSize;
 
-    refresh = true; //设置需要刷新标记，等待线程刷新
+    refresh = true; //set the need to refresh the marker and wait for the thread to be refreshed
 }
 
 int Oscilloscope::isFormatSupported()
@@ -143,13 +143,13 @@ void Oscilloscope::run()
 #else
     auto output = new QAudioOutput(this->audioDevice, format);
 #endif
-    if(output->bufferSize() < bufferMaxSize * 2) output->setBufferSize(bufferMaxSize * 2);  //如果音频缓冲区小于最大buffer的两倍则扩大之。
+    if(output->bufferSize() < bufferMaxSize * 2) output->setBufferSize(bufferMaxSize * 2);  //if the audio buffer is less than twice the maximum buffer, expand it
     auto device = output->start();
 
     stateStart = true;
     while(1)
     {
-        //退出检测
+        //exit detection
         if(stopMe)
         {
             output->stop();
@@ -159,7 +159,7 @@ void Oscilloscope::run()
             return;
         }
 
-        //如果需要刷新，先刷新
+        //if need to refresh, refresh first
         if(refresh)
         {
             refresh = false;
@@ -167,17 +167,17 @@ void Oscilloscope::run()
             bufferLen = bufferRefreshLen;
         }
 
-        //输出
+        //output
         if(device && output && bufferLen)
         {
-            if((output->bufferSize() - output->bytesFree()) * 10 / channelCount * fps / sampleRate < 10 && //如果剩余数据可播放的时间小于fps的倒数(*10是为了不想用浮点数)
-                    output->bytesFree() > bufferLen)    //且剩余缓冲大于即将写入的数据大小 (一般情况下不会出现这个情况，这里只是以防万一)
+            if((output->bufferSize() - output->bytesFree()) * 10 / channelCount * fps / sampleRate < 10 && //if the remaining data playable time is less than the inverse of fps (*10 is to not want to use floating point numbers)
+                    output->bytesFree() > bufferLen)    //and the remaining buffer is larger than the size of the data to be written (this does not normally happen, but here is just a precaution)
             {
                 //device->write(bufferFrame, bufferFrame.length()); //输出边框
                 device->write(buffer, bufferLen);
             }
-            else    //否则说明缓冲区时间一定大于fps的倒数，所以可以休息一会
-                QThread::msleep(1000 / fps / 10);  //休息十分之一的帧的时间
+            else    //otherwise, it means that the buffer time must be greater than the countdown of fps, so you can take a break
+                QThread::msleep(1000 / fps / 10);  //rest a tenth of the frame time
         }
 
     }
