@@ -26,7 +26,7 @@ To get the outlines of the objects in the video it is run through edge detection
 
 This project is in the early stages of developement! It is usable but will most likely take a bit of fiddeling around to get it working. A detailed Documentation is in the works.
 
-##Demo Video of the Original Oscilloscope Player by YJBeetle
+## Demo Video of the Original Oscilloscope Player by YJBeetle
 
 https://youtu.be/VOMl51j2kIk
 
