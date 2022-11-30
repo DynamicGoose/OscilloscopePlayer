@@ -1,51 +1,95 @@
-name: CMake
+name: Compile and Release
 
-on:
-  workflow_dispatch:
+on: push
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Devel
+  QT_VERSION:     "6.2.0"
+  MINGW_VERSION:  "win64_mingw81"
+  MINGW_PATH:     "mingw81_64"
+  BUILD_TYPE:      Release
 
 jobs:
-  prep:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install Qt5/Qt6 (yaqti)
-      # You may pin to the exact commit or the version.
-      # uses: WillBrennan/yaqti@8182822afd102e931137d71da54f52a13597af8d
-      uses: WillBrennan/yaqti@2021.07.29
-      with:
-        # Qt version to pick 5.15.2 or 6.2.0
-        version: 6.2.0
-        # install os; linux, windows, or mac
-        os: linux
-        # what platform are you installing for? desktop, winrt, android, or ios
-        platform: desktop
-        # what optional Qt modules to install? qtcharts, qtnetworkauth ect...
-        modules: qtmultimedia
-
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
-
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-
-    - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    - name: Test
+    -
+      uses: actions/checkout@v2
+#    -
+#      name: Check mingw g++ version
+#      run: |
+#        Write-Output (Get-Command g++.exe).Path
+#        g++.exe --version
+    -
+      name: Install correct version of mingw
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install mingw --version=8.1.0  -y
+#    -
+#      name: Check mingw directory
+#      run: |
+#        ls C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin
+    -
+      name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        host: windows
+        target: "desktop"
+        version: ${{ env.QT_VERSION }}
+        arch: ${{ env.MINGW_VERSION }}
+        dir: "${{github.workspace}}/qt"
+        install-deps: "true"
+    -
+      name: Set Qt path and refresh
+      run: |
+        echo "${{github.workspace}}/qt/Qt/${{ env.QT_VERSION }}/${{ env.MINGW_PATH }}/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        refreshenv
+        #Write-Output (Get-Command g++.exe).Path
+        #g++.exe --version
+#    -
+#      name: Check availability of libraries
+#      run: |
+#        ls ${{github.workspace}}/qt/Qt/${{ env.QT_VERSION }}/${{ env.MINGW_PATH }}/lib/
+#    -
+#      name: Check availability of binaries
+#      run: |
+#        ls ${{github.workspace}}/qt/Qt/${{ env.QT_VERSION }}/${{ env.MINGW_PATH }}/bin/
+#    -
+#      name: Prepend path
+#      run: echo ":${{github.workspace}}/qt/Qt/${{ env.QT_VERSION }}/mingw73_32/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+#    -
+#      name: Check QMake, CMake and make
+#      run: |
+#        Write-Output (Get-Command qmake.exe).Path
+#        qmake.exe -version
+#        Write-Output (Get-Command cmake.exe).Path
+#        cmake.exe -version
+#        Write-Output (Get-Command mingw32-make.exe).Path
+#        mingw32-make.exe -version  
+    -
+      name: Configure CMake Proyect
+      working-directory: ${{github.workspace}}
+      env:
+        CMAKE_PREFIX_PATH: ${{env.Qt5_Dir}}
+      run: cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "CodeBlocks - MinGW Makefiles" -B ${{github.workspace}}/build
+    -
+      name: Build proyect
       working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C ${{env.BUILD_TYPE}}
-
+      run: |
+        mingw32-make.exe
+    -
+      name: Compress portable program
+      run: |
+        mkdir ${{github.workspace}}\build\all\
+        cp ${{github.workspace}}/build/RePr.exe ${{github.workspace}}\build\all\
+        cd ${{github.workspace}}\build\all\
+        windeployqt.exe RePr.exe --release
+        ls
+        Compress-Archive -Path ${{github.workspace}}\build\all\ -DestinationPath ${{github.workspace}}\build\final.zip
+    -
+      name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ${{github.workspace}}/build/final.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
