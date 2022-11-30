@@ -1,3 +1,5 @@
+![W4ve](https://repository-images.githubusercontent.com/572273307/ccf4d86e-7872-4195-a01e-0b58cfdfc12d)
+
 # W4ve: Oscilloscope Video Player
 
 W4ve aims to be an improved version of the Oscilloscope Player by YJBeetle.
