@@ -1,25 +1,32 @@
-# OscilloscopePlayer
+# W4ve: Oscilloscope Video Player
 
-本项目利用声卡作为数模转换，用于示波器X-Y模式下绘制线条，以实现播放视频。
+W4ve aims to be an improved version of the Oscilloscope Player by YJBeetle.
 
-## 原理
+## How it works
 
-原始视频 -> FFmpeg解码 -> 边缘检测 -> 路径计算 -> 编码线条路径为音频 -> 通过声卡（充当廉价的DAC） 输出 -> 示波器X-Y模式输入分别连接左右声道 -> 播放
+To get the outlines of the objects in the video it is run through edge detection. Now that we have the edges we can take that data and run a path calculation, which then gets encoded to an audio signal and is output via the sound card. The signal needs to be connected to the left and right channels of an oscilloscope in XY-mode respectively. 
 
-## 效果预览
+## Improvements
+
+### implemented
+
+- english translation
+
+### in developement
+
+- better documentation
+- binaries for download
+
+### planned
+
+- more effitient code
+- more userfriendly UI
+
+## !!IMPORTANT!!
+
+This project is in the early stages of developement! It is usable but will most likely take a bit of fiddeling around to get it working. A detailed Documentation is in the works.
+
+##Demo Video of the Original Oscilloscope Player by YJBeetle
 
 https://youtu.be/VOMl51j2kIk
 
-## 现状
-
-目前未完成状态，勉强可以使用，供大家交流研究。
-
-### 以下为将要实现的部分:
-
-播放时候同时有原视频的声音输出(在有闲置声道或多声卡的设备上可用)
-
-时间码显示
-
-进度条拖拽
-
-路径的计算相关算法需要进一步优化，尽量减少"拔丝"效果
