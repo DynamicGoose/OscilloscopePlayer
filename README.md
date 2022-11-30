@@ -19,7 +19,7 @@ To get the outlines of the objects in the video it is run through edge detection
 
 ### planned
 
-- more effitient code
+- optimized code
 - more userfriendly UI
 
 ## !!IMPORTANT!!
