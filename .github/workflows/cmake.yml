@@ -41,15 +41,10 @@ jobs:
 #        ls C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin
     -
       name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        host: windows
-        target: "desktop"
-        version: ${{ env.QT_VERSION }}
-        arch: ${{ env.MINGW_VERSION }}
-        dir: "${{github.workspace}}/qt"
-        install-deps: "true"
-        modules: "qtmultimedia"
+      run: |
+        pip -U pip
+        pip install aqtinstall
+        aqt install-qt windows desktop 6.2.0 win64_mingw81 -m all
     -
       name: Set Qt path and refresh
       run: |
