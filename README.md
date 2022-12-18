@@ -17,12 +17,12 @@ To get the outlines of the objects in the video it is run through edge detection
 ### in developement
 
 - better documentation
-- binaries for download
+- more userfriendly UI
 
 ### planned
 
 - optimized code
-- more userfriendly UI
+- binaries for download
 
 ## !!IMPORTANT!!
 
